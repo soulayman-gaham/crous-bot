@@ -1,8 +1,7 @@
 services:
-  - type: cron
-    name: crous-checker
+  - type: web
+    name: crous-bot
     env: python
     plan: free
-    schedule: "*/5 * * * *"  # Toutes les 5 minutes
     buildCommand: ""
-    startCommand: "python main.py"
+    startCommand: python main.py
