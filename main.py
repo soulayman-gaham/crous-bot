@@ -1,51 +1,57 @@
 import requests
+from bs4 import BeautifulSoup
 import os
-from flask import Flask
 from dotenv import load_dotenv
 
 load_dotenv()
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-URL = "https://trouverunlogement.lescrous.fr/tools/41/search?occupationModes=alone&bounds=3.0532561_45.8183838_3.1721761_45.7556941"
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+URL = "https://trouverunlogement.lescrous.fr/tools/41/search?bounds=2.1603044_45.9292956_2.2136084_45.8588518"
 
-app = Flask(__name__)
-
-@app.route("/")
-def check_availability():
+def get_nombre_logements():
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        }
-        response = requests.get(URL, headers=headers)
-        content_type = response.headers.get("Content-Type", "")
-        print("📥 Status HTTP :", response.status_code)
-        print("📄 Content-Type :", content_type)
+        res = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
+        res.raise_for_status()
+        res.encoding = "utf-8"
+        soup = BeautifulSoup(res.text, "html.parser")
+        titre = soup.select_one("h2.SearchResults-desktop")
+        if not titre:
+            return 0
 
-        if "application/json" not in content_type:
-            return "❌ Erreur : la réponse n'est pas du JSON valide."
+        texte = titre.text.strip()
+        print("🔍 Titre trouvé :", texte)
 
-        data = response.json()
+        if texte.startswith("Aucun"):
+            return 0
 
-        if data and len(data) > 0:
-            message = f"🏠 <b>{len(data)} logement(s) dispo</b> à Clermont-Ferrand !\n🔗 <a href='{URL}'>Voir</a>"
-            send_telegram_message(message)
-            return "✅ Logement(s) détecté(s) et message envoyé."
-        else:
-            return "❌ Aucun logement disponible."
-
+        try:
+            nb = int(texte.split(" ")[0])
+            return nb
+        except ValueError:
+            print("❌ Erreur : nombre de logements non interprétable")
+            return 0
     except Exception as e:
-        return f"❌ Erreur: {e}"
+        print("❌ Erreur de scraping :", e)
+        return 0
 
-def send_telegram_message(text):
-    telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML"
-    }
-    requests.post(telegram_url, data=payload)
+def envoyer_message(msg):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    data = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"}
+    try:
+        res = requests.post(url, data=data)
+        res.raise_for_status()
+        print("✅ Message envoyé")
+    except Exception as e:
+        print("❌ Erreur Telegram :", e)
+
+def main():
+    print("🔍 Vérification du nombre de logements...")
+    nb = get_nombre_logements()
+    if nb > 0:
+        envoyer_message(f"🏠 <b>{nb} logement(s) disponible(s)</b> dans la zone !\n\n🔗 <a href='{URL}'>Voir sur le site</a>")
+    else:
+        print("⚠️ Aucun logement trouvé.")
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    main()
