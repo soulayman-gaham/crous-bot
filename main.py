@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-URL = "https://trouverunlogement.lescrous.fr/tools/41/search?bounds=0.6105136871337891_44.209464972561626_0.6345033645629884_44.18254249006941"
+URL = "https://trouverunlogement.lescrous.fr/tools/41/search?occupationModes=alone&bounds=3.0532561_45.8183838_3.1721761_45.7556941"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -15,6 +15,13 @@ app = Flask(__name__)
 def check_availability():
     try:
         response = requests.get(URL)
+        content_type = response.headers.get("Content-Type", "")
+        print("📥 Status HTTP :", response.status_code)
+        print("📄 Content-Type :", content_type)
+
+        if "application/json" not in content_type:
+            return "❌ Erreur : la réponse n'est pas du JSON valide."
+
         data = response.json()
 
         if data and len(data) > 0:
@@ -23,6 +30,7 @@ def check_availability():
             return "✅ Logement(s) détecté(s) et message envoyé."
         else:
             return "❌ Aucun logement disponible."
+
     except Exception as e:
         return f"❌ Erreur: {e}"
 
