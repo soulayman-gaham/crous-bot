@@ -1,12 +1,30 @@
 import requests
-import time
 import os
+from flask import Flask
+from dotenv import load_dotenv
 
-URL = "https://trouverunlogement.lescrous.fr/tools/41/search?occupationModes=alone&bounds=3.0532561_45.8183838_3.1721761_45.7556941"
+load_dotenv()
+
+URL = "https://trouverunlogement.lescrous.fr/tools/41/search?bounds=0.6105136871337891_44.209464972561626_0.6345033645629884_44.18254249006941"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-ALERTED = False
+app = Flask(__name__)
+
+@app.route("/")
+def check_availability():
+    try:
+        response = requests.get(URL)
+        data = response.json()
+
+        if data and len(data) > 0:
+            message = f"🏠 <b>{len(data)} logement(s) dispo</b> à Clermont-Ferrand !\n🔗 <a href='{URL}'>Voir</a>"
+            send_telegram_message(message)
+            return "✅ Logement(s) détecté(s) et message envoyé."
+        else:
+            return "❌ Aucun logement disponible."
+    except Exception as e:
+        return f"❌ Erreur: {e}"
 
 def send_telegram_message(text):
     telegram_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -17,20 +35,6 @@ def send_telegram_message(text):
     }
     requests.post(telegram_url, data=payload)
 
-def check_availability():
-    global ALERTED
-    try:
-        response = requests.get(URL)
-        data = response.json()
-        if data and len(data) > 0 and not ALERTED:
-            message = f"🏠 <b>{len(data)} logement(s) dispo</b> à Clermont-Ferrand !\n🔗 <a href='{URL}'>Voir</a>"
-            send_telegram_message(message)
-            ALERTED = True
-        elif len(data) == 0:
-            ALERTED = False
-    except Exception as e:
-        print("Erreur:", e)
-
-while True:
-    check_availability()
-    time.sleep(300)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
