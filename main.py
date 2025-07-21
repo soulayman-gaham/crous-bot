@@ -14,7 +14,10 @@ app = Flask(__name__)
 @app.route("/")
 def check_availability():
     try:
-        response = requests.get(URL)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
+        response = requests.get(URL, headers=headers)
         content_type = response.headers.get("Content-Type", "")
         print("📥 Status HTTP :", response.status_code)
         print("📄 Content-Type :", content_type)
