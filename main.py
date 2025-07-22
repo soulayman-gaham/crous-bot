@@ -12,7 +12,7 @@ load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-URL = "https://trouverunlogement.lescrous.fr/tools/41/search?bounds=2.1603044_45.9292956_2.2136084_45.8588518"
+URL = "https://trouverunlogement.lescrous.fr/tools/41/search?bounds=3.0532561_45.8183838_3.1721761_45.7556941"
 
 app = Flask(__name__)
 
