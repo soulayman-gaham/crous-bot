@@ -88,5 +88,5 @@ def index():
     return "Bot de surveillance CROUS actif !"
 
 if __name__ == "__main__":
-    # Démarre le serveur sur le port que Render attend (par défaut 10000 ou 8080)
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    Thread(target=main_loop).start()
+    app.run(host="0.0.0.0", port=10000)
